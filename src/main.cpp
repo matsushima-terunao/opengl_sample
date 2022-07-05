@@ -18,6 +18,6 @@ int sample08();
 int sample09();
 
 int main(int argc, const char * argv[]) {
-    sample_all();
+    sample01();
     return 0;
 }

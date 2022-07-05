@@ -3,6 +3,7 @@
 //https://learnopengl.com/In-Practice/Text-Rendering
 //https://en.wikibooks.org/wiki/OpenGL_Programming/Modern_OpenGL_Tutorial_Text_Rendering_02
 
+#if 0
 #include "render_text.hpp"
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
@@ -246,3 +247,4 @@ void append_render_text(std::vector<std::pair<std::string, float*>>& render_text
 		render_text_list.back().first += text;
 	}
 }
+#endif
