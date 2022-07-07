@@ -1,3 +1,10 @@
+﻿/*
+ * OpenGLサンプル1 - 環境セットアップ
+ * 
+ * @author matsushima
+ * @since 2021/05/22
+ */
+
 //#include <glad/gl.h>
 #include <glad/glad.h>
 #define GLFW_INCLUDE_NONE
@@ -57,7 +64,7 @@ static void key_callback(GLFWwindow* window, int key, int scancode, int action, 
         glfwSetWindowShouldClose(window, GLFW_TRUE);
 }
 
-int main(void)
+int main01(void)
 {
     GLFWwindow* window;
     GLuint vertex_buffer, vertex_shader, fragment_shader, program;
