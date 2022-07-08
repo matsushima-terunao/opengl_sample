@@ -1,10 +1,9 @@
-﻿//
-//  mesh.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/13.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * メッシュ
+ *
+ * @author matsushima
+ * @since 2021/07/13
+ */
 /*
 start
 <read_mesh:assets/bunny.obj

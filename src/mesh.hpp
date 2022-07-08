@@ -1,10 +1,9 @@
-﻿//
-//  mesh.hpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/13.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * メッシュ
+ *
+ * @author matsushima
+ * @since 2021/07/13
+ */
 
 #ifndef mesh_hpp
 #define mesh_hpp

@@ -1,4 +1,5 @@
-﻿//
+﻿#if 0
+//
 //  sample09.cpp
 //  opengl_sample
 //
@@ -809,3 +810,4 @@ int sample09(void) {
     std::cout << std::endl;
     return 0;
 }
+#endif

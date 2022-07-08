@@ -1,4 +1,5 @@
-﻿//
+﻿#if 0
+//
 //  sample04.cpp
 //  opengl_sample
 //
@@ -444,3 +445,4 @@ int sample04(void) {
     }
     return 0;
 }
+#endif

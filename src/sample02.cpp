@@ -319,7 +319,7 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
+int main02(void) {
     std::cout << "start sample02" << std::endl;
     atexit(atexit_function);
 

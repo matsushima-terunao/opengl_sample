@@ -1,4 +1,5 @@
-﻿//2021/4/27
+﻿#if 0
+//2021/4/27
 //https://gitlab.com/wikibooks-opengl/modern-tutorials/-/tree/master/text01_intro
 //https://learnopengl.com/In-Practice/Text-Rendering
 //https://en.wikibooks.org/wiki/OpenGL_Programming/Modern_OpenGL_Tutorial_Text_Rendering_02
@@ -246,3 +247,4 @@ void append_render_text(std::vector<std::pair<std::string, float*>>& render_text
 		render_text_list.back().first += text;
 	}
 }
+#endif

@@ -1,4 +1,5 @@
-﻿//
+﻿#if 0
+//
 //  image.cpp
 //  opengl_sample
 //
@@ -52,3 +53,4 @@ int* create_color_palette(int colors, int* color_table) {
     }
     return table;
 }
+#endif

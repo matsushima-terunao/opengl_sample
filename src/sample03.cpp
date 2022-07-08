@@ -1,10 +1,9 @@
-﻿//
-//  sample03.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/13.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * OpenGLサンプル3 - メッシュ読み込み
+ *
+ * @author matsushima
+ * @since 2021/07/13
+ */
 
 #include "mesh.hpp"
 #include <glad/glad.h>
@@ -146,8 +145,8 @@ static void atexit_function() {
 
 /**
  * GLFW エラーのコールバック。
-glfw_error_callback: 65543: WGL: Driver does not support OpenGL version 5.3
-Assertion failed: 0 && "glfw_error_callback", file C:\Users\matsu\source\repos\opengl\opengl\game_sample4.cpp, line 296
+glfw_error_callback(): 65543: WGL: Driver does not support OpenGL version 5.3
+Assertion failed: 0 && "glfw_error_callback()", file C:\USR\src\blog\opengl_sample\vs\opengl_sample\opengl_sample\sample02.cpp, line 159
  */
 static void glfw_error_callback(int error, const char* description) {
     std::cerr << "glfw_error_callback(): " << error << ": " << description << std::endl;
@@ -156,14 +155,8 @@ static void glfw_error_callback(int error, const char* description) {
 
 /**
  * OpenGL エラー・デバッグメッセージのコールバック。
-gl_debug_message_callback: source = 33352 type = 824c(GL_DEBUG_TYPE_ERROR) id = 0 severity = 9146 length = 90 userParam = 0000000000000000
-message = SHADER_ID_COMPILE error has been generated. GLSL compile failed for shader 2, "": ERROR: 0:3: 'coreaaa' : unknown profile in #version directive
-
-create_shader(): !glCompileShader(): vertex shader
-create_shader(): glGetShaderInfoLog(): vertex shader
-ERROR: 0:3: 'coreaaa' : unknown profile in #version directive
-
-Assertion failed: GL_FALSE != compile_status && "create_shader(): !glCompileShader()", file C:\Users\matsu\source\repos\opengl\opengl\game_sample4.cpp, line 438
+gl_debug_message_callback(): source = 33352 type = 824c(GL_DEBUG_TYPE_ERROR) id = 0 severity = 37190 length = 146 userParam = 0000000000000000
+message = SHADER_ID_COMPILE error has been generated. GLSL compile failed for shader 2, "": ERROR: 0:3: 'corexxx' : unknown profile in #version directive
  */
 static void GLAPIENTRY gl_debug_message_callback(
     GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
@@ -183,10 +176,12 @@ static void create_vertex_buffer(
     GLsizeiptr size, const void* data, GLsizei stride, GLsizeiptr element_size, const void* element_data
 ) {
     std::cout << "< create_vertex_buffer(): size = " << size << ", element_size = " << element_size << std::endl;
+
     // VAO(vertex array object) 作成
     glGenVertexArrays(1, &array_buffer);
     assert(0 != array_buffer && "create_vertex_buffer(): glGenVertexArrays(1, &array_buffer);");
     glBindVertexArray(array_buffer);
+
     // VBO(vertex buffer object) 作成
     glGenBuffers(1, &vertex_buffer);
     assert(0 != vertex_buffer && "create_vertex_buffer(): glGenBuffers(1, &vertex_buffer);");
@@ -196,6 +191,7 @@ static void create_vertex_buffer(
     glVertexAttribPointer(position_location, 3, GL_FLOAT, GL_FALSE, stride, 0);
     glEnableVertexAttribArray(color_location);
     glVertexAttribPointer(color_location, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));
+
     // EBO(element array buffer object) 作成
     if (nullptr != element_data) {
         glGenBuffers(1, &element_buffer);
@@ -310,12 +306,12 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int sample03(void) {
+int main(void) {
     std::cout << "start sample03" << std::endl;
     atexit(atexit_function);
 
     // GLFW 初期化
-    glfwSetErrorCallback(glfw_error_callback);
+    glfwSetErrorCallback(glfw_error_callback); // エラー発生時のコールバック指定
     if (GL_FALSE == glfwInit()) {
         std::cerr << "!glfwInit()" << std::endl;
         return 1;
@@ -326,33 +322,34 @@ int sample03(void) {
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 #endif
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    GLFWwindow* const window = glfwCreateWindow(1280, 720, "sample", NULL, NULL);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // MacOS で必須
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Core Profile
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // デバッグモード
+    GLFWwindow* const window = glfwCreateWindow(1280, 720, "sample", NULL, NULL); // ウィンドウ作成
     if (nullptr == window) {
         std::cerr << "!glfwCreateWindow()" << std::endl;
         glfwTerminate();
-        return 1;
+        exit(1);
     }
-    glfwSetKeyCallback(window, glfw_key_callback);
-    glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, glfw_key_callback); // キーコールバック指定
+    glfwMakeContextCurrent(window); // 描画対象
     glfwSwapInterval(1); // バッファ切り替え間隔
 
     // OpenGL 初期化
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "!gladLoadGLLoader()" << std::endl;
         glfwTerminate();
-        return 1;
+        exit(1);
     }
+    // デバッグ出力有効
     if (NULL != glDebugMessageCallback) {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(gl_debug_message_callback, 0);
     }
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // カラーバッファーをクリアする色
     glEnable(GL_DEPTH_TEST); // デプステストを有効にする
     glDepthFunc(GL_LESS); // 前のものよりもカメラに近ければ、フラグメントを受け入れる
-    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION); // フラットシェーディング
 
     // モデル作成。
     create_cube_model(cube_model);
@@ -366,6 +363,7 @@ int sample03(void) {
     glUseProgram(program);
     // UBO 作成。
     GLuint uniform_buffer = create_uniform_buffer(sizeof(vertex_uniform), program, "vertex_uniform", vertex_uniform_binding);
+
     // エラー判定
     GLenum error = GL_GET_ERRORS();
     assert(GL_NO_ERROR == error && "main: glGetError();");
