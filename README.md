@@ -1,8 +1,8 @@
-blog
-https://mappuri.com/program/opengl-sample01-settings/
-https://mappuri.com/program/opengl-sample02-refactoring/
-https://mappuri.com/program/opengl-sample03-read_mesh/
-https://mappuri.com/program/opengl-sample04-texture-mapping/
+blog  
+https://mappuri.com/program/opengl-sample01-settings/  
+https://mappuri.com/program/opengl-sample02-refactoring/  
+https://mappuri.com/program/opengl-sample03-read_mesh/  
+https://mappuri.com/program/opengl-sample04-texture-mapping/  
 
 opengl_sample
 ====
