@@ -246,10 +246,9 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
     GLuint uniform_buffer;
     glGenBuffers(1, &uniform_buffer);
     glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
-    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
     GLuint index = glGetUniformBlockIndex(program, uniformBlockName);
     glUniformBlockBinding(program, index, binding);
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     return uniform_buffer;
 }
@@ -260,6 +259,7 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
  * triangle
  */
 static void create_triangle_model(Model& model) {
+    // メッシュ作成。
     static float vertsf[] = {
          -0.6f, -0.4f, 1.f, 0.f, 0.f ,
           0.6f, -0.4f, 0.f, 1.f, 0.f ,
@@ -396,7 +396,7 @@ int main02(void) {
         calc_params((float)time, ratio);
         // シェーダー設定
         glUseProgram(program);
-        glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, vertex_uniform_binding, uniform_buffer);
         GLvoid* buf = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(vertex_uniform), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
         memcpy(buf, &vertex_uniform, sizeof(vertex_uniform));
         glUnmapBuffer(GL_UNIFORM_BUFFER);

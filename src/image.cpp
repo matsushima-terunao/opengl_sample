@@ -1,11 +1,9 @@
-﻿#if 0
-//
-//  image.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/14.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * テクスチャーイメージ
+ *
+ * @author matsushima
+ * @since 2021/07/14
+ */
 
 #include "image.hpp"
 #ifdef __APPLE__
@@ -22,16 +20,11 @@
 #endif
 
 /**
- * テクスチャー作成。
- */
-unsigned int create_texture(unsigned char* data, int width, int height, int cvt_color = 0, const int* palette = nullptr);
-
-/**
  * テクスチャーイメージ読み込み。
  */
-unsigned int read_image(const char* path, int cvt_color /*= 0*/) {
+void read_image(const char* path, std::function<void(unsigned char* data, int width, int height)> callback) {
     cv::Mat img = cv::imread(path);
-    return create_texture(img.data, img.cols, img.rows, cvt_color);
+    callback(img.data, img.cols, img.rows);
 }
 
 /**
@@ -53,4 +46,3 @@ int* create_color_palette(int colors, int* color_table) {
     }
     return table;
 }
-#endif

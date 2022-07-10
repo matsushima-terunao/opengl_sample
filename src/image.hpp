@@ -1,18 +1,19 @@
-﻿//
-//  image.hpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/14.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * テクスチャーイメージ
+ *
+ * @author matsushima
+ * @since 2021/07/14
+ */
 
 #ifndef image_hpp
 #define image_hpp
 
+#include <functional>
+
 /**
  * テクスチャーイメージ読み込み。
  */
-unsigned int read_image(const char* path, int cvt_color = 0);
+void read_image(const char* path, std::function<void (unsigned char* data, int width, int height)> callback);
 
 /**
  * パレット作成。

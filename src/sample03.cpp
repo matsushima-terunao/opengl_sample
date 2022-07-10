@@ -29,6 +29,7 @@ struct Model {
     float a, b, c;
     float va, vb, vc;
 
+    // 頂点バッファー
     float* vertsf = nullptr;
     float* vertsf_center = nullptr;
     size_t verts_count, verts_stride;
@@ -240,10 +241,9 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
     GLuint uniform_buffer;
     glGenBuffers(1, &uniform_buffer);
     glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
-    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
     GLuint index = glGetUniformBlockIndex(program, uniformBlockName);
     glUniformBlockBinding(program, index, binding);
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     return uniform_buffer;
 }
@@ -254,8 +254,10 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
  * cube
  */
 static void create_cube_model(Model& model) {
+    // メッシュ読み込み。
     static std::vector<Vertex> vertex_list;
     read_mesh("assets/cube.obj", vertex_list);
+    // メッシュ作成。
     model.vertsf = (float*)vertex_list.data();
     model.verts_count = vertex_list.size();
     model.verts_stride = sizeof(Vertex);
@@ -306,7 +308,7 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
+int main03(void) {
     std::cout << "start sample03" << std::endl;
     atexit(atexit_function);
 
@@ -383,7 +385,7 @@ int main(void) {
         calc_params((float)time, ratio);
         // シェーダー設定
         glUseProgram(program);
-        glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, vertex_uniform_binding, uniform_buffer);
         GLvoid* buf = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(vertex_uniform), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
         memcpy(buf, &vertex_uniform, sizeof(vertex_uniform));
         glUnmapBuffer(GL_UNIFORM_BUFFER);
