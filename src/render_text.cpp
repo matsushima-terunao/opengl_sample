@@ -1,8 +1,9 @@
-﻿#if 0
-//2021/4/27
-//https://gitlab.com/wikibooks-opengl/modern-tutorials/-/tree/master/text01_intro
-//https://learnopengl.com/In-Practice/Text-Rendering
-//https://en.wikibooks.org/wiki/OpenGL_Programming/Modern_OpenGL_Tutorial_Text_Rendering_02
+﻿/*
+ * テキスト描画
+ *
+ * @author matsushima
+ * @since 2021/04/27
+ */
 
 #include "render_text.hpp"
 #include <glad/glad.h>
@@ -21,20 +22,6 @@
 #include <iostream>
 #include <map>
 #include <assert.h>
-/*
-#include "misc.hpp"
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#pragma warning(push, 0)
-#include "glfw/deps/linmath.h"
-#undef inline
-#pragma warning(pop)
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <map>
-#include <string>
-#include <vector>
-*/
 
 static const char* text_vertex_shader = R"(
 #version 330 core
@@ -110,6 +97,7 @@ static GLuint create_shader(const char* name, const GLuint program, GLenum shade
  * テキスト描画初期化。
  */
 int init_render_text() {
+	// 文字イメージセット描画用テクスチャー準備
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -123,7 +111,12 @@ int init_render_text() {
 	mat4x4 projection;
 	mat4x4_ortho(projection, 0.0f, static_cast<float>(SCR_WIDTH), 0.0f, static_cast<float>(SCR_HEIGHT), 1.f, -100.f);
 	glUniformMatrix4fv(glGetUniformLocation(program, "projection"), 1, GL_FALSE, (const GLfloat*)projection);
-	// FreeType
+	// テクスチャー作成
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ch_width * ch_count, ch_width, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+	// FreeType 初期化
 	FT_Error ft_error;
 	ft_error = FT_Init_FreeType(&ft);
 	assert(!ft_error && "init_resources: FT_Init_FreeType();");
@@ -131,11 +124,7 @@ int init_render_text() {
 	ft_error = FT_New_Face(ft, font_name.c_str(), 0, &face);
 	assert(!ft_error && "init_resources: FT_New_Face();");
 	FT_Set_Pixel_Sizes(face, 0, ch_width);
-	// テクスチャー作成
-	glGenTextures(1, &texture);
-	glBindTexture(GL_TEXTURE_2D, texture);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // disable byte-alignment restriction
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, ch_width * ch_count, ch_width, 0, GL_RED, GL_UNSIGNED_BYTE, NULL);
+
 	// 文字ごとのイメージ書き込み
 	for (unsigned char c = 0; c < ch_count; ++c) {
 		ft_error = FT_Load_Char(face, c, FT_LOAD_RENDER);
@@ -143,16 +132,20 @@ int init_render_text() {
 			assert(!ft_error && "init_resources: FT_LOAD_RENDER();");
 			continue;
 		}
+		// 文字イメージをテクスチャーに書き込み
 		if (face->glyph->bitmap.width > 0) {
 			glTexSubImage2D(GL_TEXTURE_2D, 0, c * ch_width, 0, face->glyph->bitmap.width, face->glyph->bitmap.rows,
 				GL_RED, GL_UNSIGNED_BYTE, face->glyph->bitmap.buffer);
 		}
+		// 文字座標取得
 		character_textures[c] = {
 			face->glyph->bitmap_left, face->glyph->bitmap_top,
 			(int)face->glyph->bitmap.width, (int)face->glyph->bitmap.rows,
 			(int)face->glyph->advance.x,
 		};
 	}
+
+	// 文字イメージセット描画終了
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
@@ -160,7 +153,8 @@ int init_render_text() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 	FT_Done_Face(face);
 	FT_Done_FreeType(ft);
-	// VAO/VBO 作成
+
+	// テキスト描画用バッファ作成
 	glGenVertexArrays(1, &vertex_array);
 	glGenBuffers(1, &vertex_object);
 	glBindVertexArray(vertex_array);
@@ -177,14 +171,17 @@ int init_render_text() {
  * テキスト描画。
  */
 float render_text(const char* text, float x, float y, float scale, float color[3], bool proportional) {
+	// テキスト描画用バッファ準備
 	glUseProgram(program);
 	glUniform3f(glGetUniformLocation(program, "texture_color"), color[0], color[1], color[2]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindVertexArray(vertex_array);
+
+	// テキストポリゴン配列準備
 	char* vertices_buf = new char[strlen(text) * 4 * 24];
 	int i;
 	for (i = 0; i < str_length && '\0' != text[i]; ++i) {
-		// 文字ごとにポリゴン追加
+		// テクスチャー切り出し
 		character_rectangle_info& ch = character_textures[text[i]];
 		float xpos = x + ch.x * scale;
 		float ypos = y - (ch.h - ch.y) * scale;
@@ -204,9 +201,12 @@ float render_text(const char* text, float x, float y, float scale, float color[3
 			{ xpos + w, ypos,     u + uw, uh },
 			{ xpos + w, ypos + h, u + uw, 0.0f },
 		};
+
+		// ポリゴン追加
 		memcpy(vertices_buf + i * sizeof(vertices), vertices, sizeof(vertices));
 		x += proportional ? (ch.advance_x >> 6) * scale : ch_width * scale / 1.5f;
 	}
+
 	// ポリゴン描画
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glBindBuffer(GL_ARRAY_BUFFER, vertex_object);
@@ -247,4 +247,3 @@ void append_render_text(std::vector<std::pair<std::string, float*>>& render_text
 		render_text_list.back().first += text;
 	}
 }
-#endif

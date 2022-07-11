@@ -74,13 +74,13 @@ static struct vertex_uniform vertex_uniform = {
  * @see create_vertex: glEnableVertexAttribArray(_location);
  * @see create_vertex: glVertexAttribPointer(_location, ...);
  */
-constexpr GLuint position_location = 0;
-constexpr GLuint texture_uv_location = 1;
+constexpr GLuint position_location = 0; // x, y, z: 頂点座標
+constexpr GLuint texture_uv_location = 1; // u, v: テクスチャーのUVマッピング座標
 
 /*
  * シェーダー uniform の　binding point。
  * @see create_uniform_buffer: glUniformBlockBinding(program, index, binding);
- * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
+ * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer);
  */
 constexpr GLuint vertex_uniform_binding = 0;
 
@@ -152,8 +152,8 @@ static void atexit_function() {
 
 /**
  * GLFW エラーのコールバック。
-glfw_error_callback(): 65543: WGL: Driver does not support OpenGL version 5.3
-Assertion failed: 0 && "glfw_error_callback()", file C:\USR\src\blog\opengl_sample\vs\opengl_sample\opengl_sample\sample02.cpp, line 159
+glfw_error_callback: 65543: WGL: Driver does not support OpenGL version 5.3
+Assertion failed: 0 && "glfw_error_callback", file C:\Users\matsu\source\repos\opengl\opengl\game_sample4.cpp, line 296
  */
 static void glfw_error_callback(int error, const char* description) {
     std::cerr << "glfw_error_callback(): " << error << ": " << description << std::endl;
@@ -347,7 +347,7 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
+int main04(void) {
     std::cout << "start sample04" << std::endl;
     atexit(atexit_function);
 

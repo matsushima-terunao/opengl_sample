@@ -71,13 +71,13 @@ static struct vertex_uniform vertex_uniform = {
  * @see create_vertex: glEnableVertexAttribArray(_location);
  * @see create_vertex: glVertexAttribPointer(_location, ...);
  */
-constexpr GLuint position_location = 0;
-constexpr GLuint color_location = 1;
+constexpr GLuint position_location = 0; // x, y, z: 頂点座標
+constexpr GLuint color_location = 1; // r, g, b: 頂点カラー
 
 /*
  * シェーダー uniform の　binding point。
  * @see create_uniform_buffer: glUniformBlockBinding(program, index, binding);
- * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
+ * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer);
  */
 constexpr GLuint vertex_uniform_binding = 0;
 

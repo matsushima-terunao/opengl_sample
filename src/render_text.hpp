@@ -1,10 +1,9 @@
-﻿//
-//  render_text.hpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/14.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * テキスト描画
+ *
+ * @author matsushima
+ * @since 2021/04/27
+ */
 
 #ifndef render_text_h
 #define render_text_h

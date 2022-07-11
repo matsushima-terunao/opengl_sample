@@ -1,11 +1,9 @@
-﻿#if 0
-//
-//  sample05.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/14.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * OpenGLサンプル5 - テキスト描画
+ *
+ * @author matsushima
+ * @since 2021/07/14
+ */
 
 #include "image.hpp"
 #include "mesh.hpp"
@@ -103,7 +101,7 @@ constexpr GLuint texture_uv_location = 2; // u, v: テクスチャーのUVマッ
 /*
  * シェーダー uniform の　binding point。
  * @see create_uniform_buffer: glUniformBlockBinding(program, index, binding);
- * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
+ * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer);
  */
 constexpr GLuint vertex_uniform_binding = 0;
 
@@ -211,14 +209,8 @@ static void glfw_error_callback(int error, const char* description) {
 
 /**
  * OpenGL エラー・デバッグメッセージのコールバック。
-gl_debug_message_callback: source = 33352 type = 824c(GL_DEBUG_TYPE_ERROR) id = 0 severity = 9146 length = 90 userParam = 0000000000000000
-message = SHADER_ID_COMPILE error has been generated. GLSL compile failed for shader 2, "": ERROR: 0:3: 'coreaaa' : unknown profile in #version directive
-
-create_shader(): !glCompileShader(): vertex shader
-create_shader(): glGetShaderInfoLog(): vertex shader
-ERROR: 0:3: 'coreaaa' : unknown profile in #version directive
-
-Assertion failed: GL_FALSE != compile_status && "create_shader(): !glCompileShader()", file C:\Users\matsu\source\repos\opengl\opengl\game_sample4.cpp, line 438
+gl_debug_message_callback(): source = 33352 type = 824c(GL_DEBUG_TYPE_ERROR) id = 0 severity = 37190 length = 146 userParam = 0000000000000000
+message = SHADER_ID_COMPILE error has been generated. GLSL compile failed for shader 2, "": ERROR: 0:3: 'corexxx' : unknown profile in #version directive
  */
 static void GLAPIENTRY gl_debug_message_callback(
     GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
@@ -238,10 +230,12 @@ static void create_vertex_buffer(
     GLsizeiptr size, const void* data, GLsizei stride, GLsizeiptr element_size, const void* element_data
 ) {
     std::cout << "< create_vertex_buffer(): size = " << size << ", element_size = " << element_size << std::endl;
+
     // VAO(vertex array object) 作成
     glGenVertexArrays(1, &array_buffer);
     assert(0 != array_buffer && "create_vertex_buffer(): glGenVertexArrays(1, &array_buffer);");
     glBindVertexArray(array_buffer);
+
     // VBO(vertex buffer object) 作成
     glGenBuffers(1, &vertex_buffer);
     assert(0 != vertex_buffer && "create_vertex_buffer(): glGenBuffers(1, &vertex_buffer);");
@@ -253,6 +247,7 @@ static void create_vertex_buffer(
     glVertexAttribPointer(color_location, 3, GL_FLOAT, GL_FALSE, stride, (void*)(3 * sizeof(GLfloat)));
     glEnableVertexAttribArray(texture_uv_location);
     glVertexAttribPointer(texture_uv_location, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(GLfloat)));
+
     // EBO(element array buffer object) 作成
     if (nullptr != element_data) {
         glGenBuffers(1, &element_buffer);
@@ -260,6 +255,34 @@ static void create_vertex_buffer(
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, element_buffer);
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, element_size, element_data, GL_STATIC_DRAW);
     }
+}
+
+/**
+ * テクスチャー作成。
+ */
+static GLuint create_texture(unsigned char* data, int width, int height, int cvt_color = 0, const int* palette = nullptr) {
+    // パレット -> RGB
+    if (palette) {
+        int* pixels = (int*)data;
+        for (int i = 0; i < width * height; ++i) {
+            pixels[i] = palette[pixels[i]];
+        }
+    }
+    // R/B 入れ替え
+    if (cvt_color) {
+        for (int i = 0; i < width * height; ++i) {
+            std::swap(data[i * cvt_color], data[i * cvt_color + 2]);
+        }
+    }
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    GLenum format = (4 == cvt_color) ? GL_RGBA : GL_RGB;
+    glTexImage2D(GL_TEXTURE_2D, 0, format, width, height, 0, format, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    return texture;
 }
 
 /**
@@ -301,10 +324,9 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
     GLuint uniform_buffer;
     glGenBuffers(1, &uniform_buffer);
     glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
-    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
     GLuint index = glGetUniformBlockIndex(program, uniformBlockName);
     glUniformBlockBinding(program, index, binding);
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     return uniform_buffer;
 }
@@ -315,15 +337,21 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
  * cube
  */
 static void create_cube_model(Model& model) {
+    // メッシュ読み込み。
     static std::vector<Vertex> vertex_list;
     read_mesh("assets/cube.obj", vertex_list);
+    // メッシュ作成。
     model.vertsf = (float*)vertex_list.data();
     model.verts_count = vertex_list.size();
     model.verts_stride = sizeof(Vertex);
     create_vertex_buffer(model.vertex_array, model.vertex_buffer, model.element_buffer,
         model.verts_count * model.verts_stride, model.vertsf, (GLsizei)model.verts_stride,
         0, nullptr);
-    model.texture = read_image("assets/uvmap.png");
+    // テクスチャーイメージ読み込み。
+    read_image("assets/uvmap.png",
+        // テクスチャー作成。
+        [&](unsigned char* data, int width, int height) {
+            model.texture = create_texture(data, width, height); });
 }
 
 // 入力
@@ -511,12 +539,12 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int sample05(void) {
+int main(void) {
     std::cout << "start sample05" << std::endl;
     atexit(atexit_function);
 
     // GLFW 初期化
-    glfwSetErrorCallback(glfw_error_callback);
+    glfwSetErrorCallback(glfw_error_callback); // エラー発生時のコールバック指定
     if (GL_FALSE == glfwInit()) {
         std::cerr << "!glfwInit()" << std::endl;
         return 1;
@@ -527,33 +555,34 @@ int sample05(void) {
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 #endif
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    GLFWwindow* const window = glfwCreateWindow(1280, 720, "sample", NULL, NULL);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // MacOS で必須
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Core Profile
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // デバッグモード
+    GLFWwindow* const window = glfwCreateWindow(1280, 720, "sample", NULL, NULL); // ウィンドウ作成
     if (nullptr == window) {
         std::cerr << "!glfwCreateWindow()" << std::endl;
         glfwTerminate();
-        return 1;
+        exit(1);
     }
-    glfwSetKeyCallback(window, glfw_key_callback);
-    glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, glfw_key_callback); // キーコールバック指定
+    glfwMakeContextCurrent(window); // 描画対象
     glfwSwapInterval(1); // バッファ切り替え間隔
 
     // OpenGL 初期化
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "!gladLoadGLLoader()" << std::endl;
         glfwTerminate();
-        return 1;
+        exit(1);
     }
+    // デバッグ出力有効
     if (NULL != glDebugMessageCallback) {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(gl_debug_message_callback, 0);
     }
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // カラーバッファーをクリアする色
     glEnable(GL_DEPTH_TEST); // デプステストを有効にする
     glDepthFunc(GL_LESS); // 前のものよりもカメラに近ければ、フラグメントを受け入れる
-    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION); // フラットシェーディング
 
     // モデル作成。
     create_cube_model(cube_model);
@@ -592,7 +621,7 @@ int sample05(void) {
         calc_params((float)time, ratio);
         // シェーダー設定
         glUseProgram(program);
-        glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
+        glBindBufferBase(GL_UNIFORM_BUFFER, vertex_uniform_binding, uniform_buffer);
         GLvoid* buf = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(vertex_uniform), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
         memcpy(buf, &vertex_uniform, sizeof(vertex_uniform));
         glUnmapBuffer(GL_UNIFORM_BUFFER);
@@ -644,4 +673,3 @@ int sample05(void) {
     std::cout << std::endl;
     return 0;
 }
-#endif
