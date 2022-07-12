@@ -539,7 +539,7 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
+int main05(void) {
     std::cout << "start sample05" << std::endl;
     atexit(atexit_function);
 
@@ -582,7 +582,6 @@ int main(void) {
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // カラーバッファーをクリアする色
     glEnable(GL_DEPTH_TEST); // デプステストを有効にする
     glDepthFunc(GL_LESS); // 前のものよりもカメラに近ければ、フラグメントを受け入れる
-    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION); // フラットシェーディング
 
     // モデル作成。
     create_cube_model(cube_model);
