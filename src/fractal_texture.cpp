@@ -1,10 +1,9 @@
-﻿//
-//  fractal_texture.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/04/23.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * フラクタルで地形テクスチャー生成
+ *
+ * @author matsushima
+ * @since 2021/04/23
+ */
 
 #include <iostream>
 #define _USE_MATH_DEFINES

@@ -418,7 +418,7 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
     GLuint uniform_buffer;
     glGenBuffers(1, &uniform_buffer);
     glBindBuffer(GL_UNIFORM_BUFFER, uniform_buffer);
-    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_DYNAMIC_DRAW);
+    glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
     GLuint index = glGetUniformBlockIndex(program, uniformBlockName);
     glUniformBlockBinding(program, index, binding);
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
@@ -645,8 +645,8 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
-    std::cout << "start sample05" << std::endl;
+int main06(void) {
+    std::cout << "start sample06" << std::endl;
     atexit(atexit_function);
 
     // GLFW 初期化

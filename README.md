@@ -5,6 +5,7 @@ https://mappuri.com/program/opengl-sample03-read_mesh/
 https://mappuri.com/program/opengl-sample04-texture-mapping/  
 https://mappuri.com/program/opengl-sample05-render_text/  
 https://mappuri.com/program/opengl-sample06-lighting/  
+https://mappuri.com/program/opengl-sample07-fractal_texture/  
 
 opengl_sample
 ====
