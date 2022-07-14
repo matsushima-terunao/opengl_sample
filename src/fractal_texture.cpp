@@ -97,7 +97,7 @@ static void fft2(double* buf_real, double* buf_imag, double* tmp_real, double* t
  * フラクタルのビットマップ作成。
  */
 float* create_fractal(int width_bits, double h) {
-    std::cout << "<create_fractal:width_bits=" << width_bits << "(" << (1 << width_bits) << ")" << std::endl;
+    std::cout << "< create_fractal:width_bits=" << width_bits << "(" << (1 << width_bits) << ")" << std::endl;
     size_t width = 1ull << width_bits;
     int x, y;
     double* buf_real = new double[width * width];
@@ -176,6 +176,6 @@ float* create_fractal(int width_bits, double h) {
     delete[] buf_imag;
     delete[] tmp_real;
     delete[] tmp_imag;
-    std::cout << ">create_fractal:elem_max=" << elem_max << ",elem_min=" << elem_min << std::endl;
+    std::cout << "> create_fractal:elem_max=" << elem_max << ",elem_min=" << elem_min << std::endl;
     return buf;
 }

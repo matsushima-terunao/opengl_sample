@@ -342,6 +342,7 @@ static void create_vertex_buffer(
     glVertexAttribPointer(texture_uv_location, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(normal_location);
     glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(GLfloat)));
+
     // EBO(element array buffer object) 作成
     if (nullptr != element_data) {
         glGenBuffers(1, &element_buffer);

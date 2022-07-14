@@ -68,7 +68,7 @@ struct Model {
 
 /** モデル位置・角度。 */
 static Model sphere_model = {
-    0.0f, 0.0f, -3.0f,  0.5f, 0.0f, 0.0f,  0.0f, 0.03f, 0.0f,
+    0.0f, 0.0f, -3.0f,  0.5f, 0.0f, 0.0f,  0.0f, 0.001f, 0.0f,
 };
 /** カメラ情報。 */
 static vec3 camera_eye = { 0.0f, 0.0f, 1.0f }, camera_center = { 0.f, 0.f, 0.f }, camera_up = { 0.f, 1.0f, 0.f };
@@ -349,6 +349,7 @@ static void create_vertex_buffer(
     glVertexAttribPointer(texture_uv_location, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(normal_location);
     glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(GLfloat)));
+
     // EBO(element array buffer object) 作成
     if (nullptr != element_data) {
         glGenBuffers(1, &element_buffer);
@@ -688,7 +689,7 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
+int main07(void) {
     std::cout << "start sample07" << std::endl;
     atexit(atexit_function);
 

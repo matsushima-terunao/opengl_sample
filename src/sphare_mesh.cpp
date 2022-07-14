@@ -1,25 +1,32 @@
-﻿//  Created by matsushima on 2021/04/23.
+﻿/*
+ * 球体メッシュ生成
+ *
+ * @author matsushima
+ * @since 2021/04/23
+ */
+
 #include <iostream>
 #define _USE_MATH_DEFINES
 #include <math.h>
 #include <assert.h>
 
-/// <summary>
-/// 極座標からテクスチャーの色・UV座標を取得。
-/// </summary>
-/// <param name="resolution">テクスチャーの解像度</param>
-/// <param name="a">偏角(経度)</param>
-/// <param name="r">動径(緯度)</param>
-/// <param name="surfaces">北半球/南半球</param>
-/// <param name="texture_buffer">テクスチャーのピクセルデータ</param>
-/// <param name="color_palette">テクスチャーのカラーパレット</param>
-/// <param name="ptx">テクスチャーのU座標へのマッピング配列</param>
-/// <param name="pty">テクスチャーのV座標へのマッピング配列</param>
-/// <param name="p">ptx, pty への格納インデックス</param>
-/// <returns>テクスチャーの ARGB</returns>
+/**
+ * 極座標からテクスチャーの色・UV座標を取得。
+ * 
+ * @param texture_width テクスチャーの解像度
+ * @param a 偏角(経度)
+ * @param r 動径(緯度)
+ * @param surfaces 1:北半球のみ 2:北半球+南半球
+ * @param texture_buffer テクスチャーのピクセルデータ
+ * @param color_palette テクスチャーのカラーパレット
+ * @param ptx テクスチャーのU座標へのマッピング配列
+ * @param pty テクスチャーのV座標へのマッピング配列
+ * @param p ptx, pty への格納インデックス
+ * @return テクスチャーの ARGB
+ */
 static int get_color_by_celestial_coordinate(
     int texture_width, double a, double r, int surfaces,
-    int* texture_buffer, int& texture_u, int& texture_v) {
+    const int* texture_buffer, int& texture_u, int& texture_v) {
     double ra = 1.0;
     if (2 == surfaces) {
         // 円から矩形へ伸張
@@ -47,11 +54,11 @@ static int get_color_by_celestial_coordinate(
  * 球体メッシュ作成。
  */
 void create_sphere_mesh(
-    int width, int height, int vert_height, int texture_width_bits, int surfaces, int* texture, const int* palette,
+    int width, int height, int vert_height, int texture_width_bits, int surfaces, const int* texture, const int* palette,
     int div_a0, int div_da, int div_b,
     float*& verts, size_t& verts_count, size_t& verts_stride, int*& polys, size_t& polys_count
 ) {
-    std::cout << "<create_sphere_mesh:unit=" << texture_width_bits << ",width=" << width << ",height=" << height << std::endl;
+    std::cout << "< create_sphere_mesh:unit=" << texture_width_bits << ",width=" << width << ",height=" << height << std::endl;
     clock_t time1 = clock();
     int texture_width = 1 << texture_width_bits;
     int stride = 11;
@@ -73,6 +80,7 @@ void create_sphere_mesh(
             double y = height / 2.0 * cos(M_PI / 2.0 * b / div_b) * d;
             double r = width / 2.0 * sin(M_PI / 2.0 * b / div_b);
             div_a = (0 == b) ? 1 : div_a0 + (b - 1) * div_da;
+            std::cout << div_a << std::endl;
             for (a = 0; a < div_a; ++a) {
                 double x = r * cos(2.0 * M_PI * a / div_a);
                 double z = r * sin(2.0 * M_PI * a / div_a);
