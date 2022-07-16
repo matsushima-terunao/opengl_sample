@@ -423,6 +423,7 @@ static GLuint create_texture(unsigned char* data, int width, int height, int cvt
             std::swap(data[i * cvt_color], data[i * cvt_color + 2]);
         }
     }
+    // テクスチャー作成
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -730,7 +731,7 @@ static void calc_params(float time, float ratio) {
 
 // メイン
 
-int main(void) {
+int main08(void) {
     std::cout << "start sample08" << std::endl;
     atexit(atexit_function);
 

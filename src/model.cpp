@@ -1,10 +1,9 @@
-﻿//
-//  model.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/20.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * モデル
+ *
+ * @author matsushima
+ * @since 2021/07/20
+ */
 
 #include "model.hpp"
 #include "linmath.h"
@@ -37,7 +36,7 @@ void create_fragment(Model& model) {
         model.fragments1[i / 3].x += model.vertsf[vi + 0] / 3;
         model.fragments1[i / 3].y += model.vertsf[vi + 1] / 3;
         model.fragments1[i / 3].z += model.vertsf[vi + 2] / 3;
-        size_t i2 = i - i % 3 + (i + 2) % 3; // 0-1 1-2 2-0
+        int i2 = i - i % 3 + (i + 2) % 3; // 0-1 1-2 2-0
         model.fragments2[i].x += model.vertsf[vi + 0] / 2;
         model.fragments2[i].y += model.vertsf[vi + 1] / 2;
         model.fragments2[i].z += model.vertsf[vi + 2] / 2;
@@ -174,8 +173,7 @@ void translate_vertex(Model& model, float* buf) {
             model.fragments1[i / 3].cnt += (2 == i % 3);
             buf1 += stride_length;
             ++model.fragment1_count;
-        }
-        else if (model.fragments2[i].cnt < model.fragments2[i].cnt_max) {
+        } else if (model.fragments2[i].cnt < model.fragments2[i].cnt_max) {
             // 破片2
             for (int j = 0; j < 2; ++j) {
                 buf2 -= stride_length;

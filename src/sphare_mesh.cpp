@@ -73,14 +73,13 @@ void create_sphere_mesh(
         p += surfaces * stride * div_a; // d = -1,1: color, x, y, z
     }
     verts = new float[p];
-    verts_count = p * sizeof(float) / 11;
+    verts_count = p / stride;
     p = 0;
     for (d = -1; d < surfaces; d += 2) {
         for (b = 0; b <= div_b; ++b) {
             double y = height / 2.0 * cos(M_PI / 2.0 * b / div_b) * d;
             double r = width / 2.0 * sin(M_PI / 2.0 * b / div_b);
             div_a = (0 == b) ? 1 : div_a0 + (b - 1) * div_da;
-            std::cout << div_a << std::endl;
             for (a = 0; a < div_a; ++a) {
                 double x = r * cos(2.0 * M_PI * a / div_a);
                 double z = r * sin(2.0 * M_PI * a / div_a);

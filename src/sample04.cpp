@@ -225,6 +225,7 @@ static GLuint create_texture(unsigned char* data, int width, int height, int cvt
             std::swap(data[i * cvt_color], data[i * cvt_color + 2]);
         }
     }
+    // テクスチャー作成
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);

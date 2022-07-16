@@ -6,6 +6,8 @@ https://mappuri.com/program/opengl-sample04-texture-mapping/
 https://mappuri.com/program/opengl-sample05-render_text/  
 https://mappuri.com/program/opengl-sample06-lighting/  
 https://mappuri.com/program/opengl-sample07-fractal_texture/  
+https://mappuri.com/program/opengl-sample08-sphare_mesh/  
+https://mappuri.com/program/opengl-sample09-create_fragment/  
 
 opengl_sample
 ====

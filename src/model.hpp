@@ -1,10 +1,9 @@
-﻿//
-//  model.hpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/20.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * モデル
+ *
+ * @author matsushima
+ * @since 2021/07/20
+ */
 
 #ifndef model_hpp
 #define model_hpp

@@ -1,11 +1,9 @@
-﻿#if 0
-//
-//  sample09.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/20.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * OpenGLサンプル9 - 破片データ作成
+ *
+ * @author matsushima
+ * @since 2021/07/20
+ */
 
 #include "fractal_texture.hpp"
 #include "image.hpp"
@@ -29,6 +27,7 @@
 #include <unordered_map>
 #include <sstream>
 #include <vector>
+#include <assert.h>
 
 // シーン情報
 
@@ -47,7 +46,7 @@
 
 /** モデル位置・角度。 */
 static Model sphere_model = {
-    0.0f, 0.0f, -2500.0f,  0.5f, 0.0f, 0.0f,  0.0f, 0.003f, 0.0f,
+    0.0f, 0.0f, -2500.0f,  0.5f, 0.0f, 0.0f,  0.0f, 0.001f, 0.0f,
 };
 /** カメラ情報。 */
 static vec3 camera_eye = { 0.0f, 0.0f, 1.0f }, camera_center = { 0.f, 0.f, 0.f }, camera_up = { 0.f, 1.0f, 0.f };
@@ -64,22 +63,19 @@ static struct perspective perspective = { 1.5f, .0f, 0.1f, 10000.0f };
 // シェーダー情報
 
 /**
- * 頂点情報 uniform 構造体定義。
- * @see vertex_shader_src: layout(std140) uniform vertex_uniform
+ * uniform block 構造体定義。
+ * @see vertex_shader_src: layout(std140) uniform uniform_block
  * @see create_uniform_buffer
  */
-struct vertex_uniform {
+struct uniform_block {
     int mode, pad11, pad12, pad13; // rendering mode
+
+    // model view projection matrix
     mat4x4 modelview_matrix;
     mat4x4 modelview_normal_matrix; // transpose(inverse(modelview_matrix))
     mat4x4 modelview_projection_matrix;
-};
-/**
- * ライティング情報 uniform 構造体定義。
- * @see lighting_shader_src: layout(std140) uniform light_uniform
- * @see create_uniform_buffer
- */
-struct light_uniform {
+
+    // ライティング情報
     float Ka; // ambient reflection coefficient
     float Kd; // diffuse reflection coefficient
     float Ks; // specular reflection coefficient
@@ -89,12 +85,9 @@ struct light_uniform {
     vec3 specular_color; float pad23;
     vec3 light_position;
 };
-/** 頂点情報 uniform 現在データ。 */
-static struct vertex_uniform vertex_uniform = {
-    .mode = MODE_COLOR_NONE | MODE_SHADING_PHONG | MODE_LIGHTING | MODE_PROJECTION_PERSPECTIVE,
-};
-/** ライティング情報 uniform 現在データ。 */
-static struct light_uniform light_uniform = {
+/** uniform block 現在データ。 */
+static struct uniform_block uniform_block = {
+    .mode = MODE_COLOR_TEXTURE | MODE_SHADING_PHONG | MODE_LIGHTING | MODE_PROJECTION_PERSPECTIVE,
     .Ka = 1.0f, .Kd = 1.0f, .Ks = 1.0f, .shininess = 80.0f,
     .ambient_color = { 0.1f, 0.1f, 0.1f }, .diffuse_color = { 0.6f, 0.6f, 0.6f }, .specular_color = { 1.0f, 1.0f, 1.0f },
     .light_position = { 3000.0f, 3000.0f, 0.0f },
@@ -113,12 +106,11 @@ constexpr GLuint texture_uv_location = 2; // u, v: テクスチャーのUVマッ
 constexpr GLuint normal_location = 3; // nx, ny, nz: 頂点の法線ベクトル
 
 /*
- * シェーダー uniform の　binding point。
+ * uniform block 構造体の　binding point。
  * @see create_uniform_buffer: glUniformBlockBinding(program, index, binding);
- * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
+ * @see create_uniform_buffer: glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer);
  */
-constexpr GLuint vertex_uniform_binding = 0;
-constexpr GLuint light_uniform_binding = 1;
+constexpr GLuint uniform_block_binding = 0;
 
 /** バーテックス・フラグメントシェーダーのライティングソースプログラム。 */
 static const std::string lighting_shader_src = R"(
@@ -135,10 +127,18 @@ static const std::string lighting_shader_src = R"(
 #define MODE_PROJECTION_PERSPECTIVE 256
 
 /**
- * ライティング情報 uniform 構造体定義、現在データ。
- * @see struct light_uniform
+ * uniform block 構造体定義、現在データ。
+ * @see struct uniform_block
  */
-layout(std140) uniform light_uniform {
+layout(std140) uniform uniform_block {
+    int mode, pad11, pad12, pad13; // rendering mode
+
+    // model view projection matrix
+    mat4 modelview_matrix;
+    mat4 modelview_normal_matrix; // transpose(inverse(modelview_matrix))
+    mat4 modelview_projection_matrix;
+
+    // ライティング情報
 float Ka; // ambient reflection coefficient
 float Kd; // diffuse reflection coefficient
 float Ks; // specular reflection coefficient
@@ -171,21 +171,19 @@ vec4 lighting(vec3 vertex_normal, vec3 vertex_position) {
 
 /** バーテックスシェーダーのソースプログラム。 */
 static const std::string vertex_shader_src = lighting_shader_src + R"(
-/**
- * 頂点情報 uniform 構造体定義、現在データ。
- * @see struct vertex_uniform
+/*
+ * 頂点情報の location。
+ * @see struct Vertex
+ * @see vertex_shader_src: layout (location = _location) in ...;
+ * @see create_vertex: glEnableVertexAttribArray(_location);
+ * @see create_vertex: glVertexAttribPointer(_location, ...);
  */
-layout(std140) uniform vertex_uniform {
-    int mode, pad11, pad12, pad13; // rendering mode
-    mat4 modelview_matrix;
-    mat4 modelview_normal_matrix; // transpose(inverse(modelview_matrix))
-    mat4 modelview_projection_matrix;
-};
 layout (location = 0) in vec3 position; // x, y, z: 頂点座標
 layout (location = 1) in vec3 color; // r, g, b: 頂点カラー
 layout (location = 2) in vec2 texture_uv; // u, v: テクスチャーのUVマッピング座標
 layout (location = 3) in vec3 normal; // nx, ny, nz: 頂点の法線ベクトル
-flat out int vertex_mode; // rendering mode
+
+// バーテックスシェーダーからフラグメントシェーダーへ渡す情報
 out vec3 vertex_position; // 頂点座標
 out vec3 vertex_normal; // 頂点の法線ベクトル
 out vec4 vertex_color; // 頂点カラー
@@ -194,7 +192,6 @@ out vec2 vertex_texture_uv; // テクスチャーのUVマッピング座標
 
 void main() {
     gl_Position = modelview_projection_matrix * vec4(position, 1.0); // 頂点座標
-    vertex_mode = mode; // rendering mode
     vertex_position = vec3(modelview_matrix * vec4(position, 1.0)); // 頂点座標
     vertex_normal = vec3(modelview_normal_matrix * vec4(normal, 0.0)); // 頂点の法線ベクトル
     vertex_color = vec4(1.0, 1.0, 1.0, 1.0); // 頂点カラー
@@ -216,29 +213,32 @@ void main() {
 
 /** フラグメントシェーダーのソースプログラム。 */
 static const std::string fragment_shader_src = lighting_shader_src + R"(
-uniform sampler2D fragment_texture; // テクスチャー
-flat in int vertex_mode; // rendering mode
+uniform sampler2D fragment_texture; // テクスチャー @see glBindTexture(GL_TEXTURE_2D, ...);
+
+// バーテックスシェーダーからフラグメントシェーダーへ渡す情報
 in vec3 vertex_position; // 頂点座標
 in vec3 vertex_normal; // 頂点の法線ベクトル
 in vec4 vertex_color; // 頂点カラー
 flat in vec4 vertex_color_flat; // フラットシェーディングの頂点カラー
 in vec2 vertex_texture_uv; // テクスチャーのUVマッピング座標
+
+// 出力データ
 out vec4 fragment_color; // 出力ピクセルカラー
 
 void main() {
     // 頂点カラー
     fragment_color = vertex_color;
     // フラットシェーディングの頂点カラー
-    if ((vertex_mode & MODE_SHADING_FLAT) == MODE_SHADING_FLAT) {
+    if ((mode & MODE_SHADING_FLAT) == MODE_SHADING_FLAT) {
         fragment_color = vertex_color_flat;
     }
     // テクスチャーのカラー
-    if ((vertex_mode & MODE_COLOR_TEXTURE) == MODE_COLOR_TEXTURE) {
+    if ((mode & MODE_COLOR_TEXTURE) == MODE_COLOR_TEXTURE) {
         fragment_color = texture(fragment_texture, vertex_texture_uv) * fragment_color;
     }
     // フォンシェーディングはライティングをフラグメントシェーダーで行う
-    if ((vertex_mode & MODE_LIGHTING) == MODE_LIGHTING
-        && (vertex_mode & MODE_SHADING_PHONG) == MODE_SHADING_PHONG) {
+    if ((mode & MODE_LIGHTING) == MODE_LIGHTING
+        && (mode & MODE_SHADING_PHONG) == MODE_SHADING_PHONG) {
         fragment_color = lighting(vertex_normal, vertex_position) * fragment_color;
     }
 }
@@ -287,14 +287,8 @@ static void glfw_error_callback(int error, const char* description) {
 
 /**
  * OpenGL エラー・デバッグメッセージのコールバック。
-gl_debug_message_callback: source = 33352 type = 824c(GL_DEBUG_TYPE_ERROR) id = 0 severity = 9146 length = 90 userParam = 0000000000000000
-message = SHADER_ID_COMPILE error has been generated. GLSL compile failed for shader 2, "": ERROR: 0:3: 'coreaaa' : unknown profile in #version directive
-
-create_shader(): !glCompileShader(): vertex shader
-create_shader(): glGetShaderInfoLog(): vertex shader
-ERROR: 0:3: 'coreaaa' : unknown profile in #version directive
-
-Assertion failed: GL_FALSE != compile_status && "create_shader(): !glCompileShader()", file C:\Users\matsu\source\repos\opengl\opengl\game_sample4.cpp, line 438
+gl_debug_message_callback(): source = 33352 type = 824c(GL_DEBUG_TYPE_ERROR) id = 0 severity = 37190 length = 146 userParam = 0000000000000000
+message = SHADER_ID_COMPILE error has been generated. GLSL compile failed for shader 2, "": ERROR: 0:3: 'corexxx' : unknown profile in #version directive
  */
 static void GLAPIENTRY gl_debug_message_callback(
     GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam) {
@@ -314,10 +308,12 @@ static void create_vertex_buffer(
     GLsizeiptr size, const void* data, GLsizei stride, GLsizeiptr element_size, const void* element_data
 ) {
     std::cout << "< create_vertex_buffer(): size = " << size << ", element_size = " << element_size << std::endl;
+
     // VAO(vertex array object) 作成
     glGenVertexArrays(1, &array_buffer);
     assert(0 != array_buffer && "create_vertex_buffer(): glGenVertexArrays(1, &array_buffer);");
     glBindVertexArray(array_buffer);
+
     // VBO(vertex buffer object) 作成
     glGenBuffers(1, &vertex_buffer);
     assert(0 != vertex_buffer && "create_vertex_buffer(): glGenBuffers(1, &vertex_buffer);");
@@ -331,6 +327,7 @@ static void create_vertex_buffer(
     glVertexAttribPointer(texture_uv_location, 2, GL_FLOAT, GL_FALSE, stride, (void*)(6 * sizeof(GLfloat)));
     glEnableVertexAttribArray(normal_location);
     glVertexAttribPointer(normal_location, 3, GL_FLOAT, GL_FALSE, stride, (void*)(8 * sizeof(GLfloat)));
+
     // EBO(element array buffer object) 作成
     if (nullptr != element_data) {
         glGenBuffers(1, &element_buffer);
@@ -382,7 +379,6 @@ static GLuint create_uniform_buffer(GLsizeiptr size, GLuint program, const GLcha
     glBufferData(GL_UNIFORM_BUFFER, size, NULL, GL_STREAM_DRAW);
     GLuint index = glGetUniformBlockIndex(program, uniformBlockName);
     glUniformBlockBinding(program, index, binding);
-    glBindBufferBase(GL_UNIFORM_BUFFER, binding, uniform_buffer); // or glBindBufferRange()
     glBindBuffer(GL_UNIFORM_BUFFER, 0);
     return uniform_buffer;
 }
@@ -404,6 +400,7 @@ static GLuint create_texture(unsigned char* data, int width, int height, int cvt
             std::swap(data[i * cvt_color], data[i * cvt_color + 2]);
         }
     }
+    // テクスチャー作成
     GLuint texture;
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
@@ -494,9 +491,9 @@ static void change_params() {
         param_info* ref; // 参照元の param_info
     };
     static param_info param_info[] = {
-        {.name = "+*color: ", .flagsip = &vertex_uniform.mode, .mask = MODE_COLOR_MASK},
+        {.name = "+*color: ", .flagsip = &uniform_block.mode, .mask = MODE_COLOR_MASK},
         {.name = "  none ", .flag = MODE_COLOR_NONE}, {.name = "  vertex ", .flag = MODE_COLOR_VERTEX}, {.name = "  texture", .flag = MODE_COLOR_TEXTURE},
-        {.name = " *   shading: ", .flagsip = &vertex_uniform.mode, .mask = MODE_SHADING_MASK},
+        {.name = " *   shading: ", .flagsip = &uniform_block.mode, .mask = MODE_SHADING_MASK},
         {.name = "  flat ", .flag = MODE_SHADING_FLAT}, {.name = "  gouroud ", .flag = MODE_SHADING_GOUROUD}, {.name = "  phong", .flag = MODE_SHADING_PHONG},
         {.name = "+ model: position="   , .rangefp = &sphere_model.x, .minf = -INFINITY, .maxf = INFINITY, .stepf = 0.1f}, {}, {},
         {.name = "  angle="             , .rangefp = &sphere_model.a, .minf = -INFINITY, .maxf = INFINITY, .stepf = 0.1f}, {}, {},
@@ -504,7 +501,7 @@ static void change_params() {
         {.name = "+ camera: eye="       , .rangefp = camera_eye, .minf = -10.f, .maxf = 10.0f, .stepf = 0.1f}, {}, {},
         {.name = "  center="            , .rangefp = camera_center, .minf = -10.f, .maxf = 10.0f, .stepf = 0.1f}, {}, {},
         {.name = "  up="                , .rangefp = camera_up, .minf = -10.f, .maxf = 10.0f, .stepf = 0.1f}, {}, {},
-        {.name = "+*projection: ", .flagsip = &vertex_uniform.mode, .mask = MODE_PROJECTION_MASK},
+        {.name = "+*projection: ", .flagsip = &uniform_block.mode, .mask = MODE_PROJECTION_MASK},
         {.name = "  ortho ", .flag = MODE_PROJECTION_ORTHO}, {.name = "  perspective", .flag = MODE_PROJECTION_PERSPECTIVE},
         {.name = "+*ortho: left="   , .rangefp = &ortho.left, .minf = 0.f, .maxf = 0.f, .stepf = 0.1f}, {.name = " *right="}, {.name = " *bottom="}, {.name = " *top="},
         {.name = "  near="          , .rangefp = &ortho.near, .minf = 0.f, .maxf = 100.f, .stepf = 0.1f},
@@ -512,13 +509,13 @@ static void change_params() {
         {.name = "+ perspective: y_fov=", .rangefp = &perspective.y_fov, .minf = 0.f, .maxf = 100.f, .stepf = 0.1f}, {.name = " *aspect="},
         {.name = "  near="              , .rangefp = &perspective.near , .minf = 0.f, .maxf = 100.f, .stepf = 0.1f},
         {.name = "  far="               , .rangefp = &perspective.far  , .minf = 0.f, .maxf = 100.f, .stepf = 1.0f},
-        {.name = "+ lighting", .flagsip = &vertex_uniform.mode, .flag = MODE_LIGHTING, .mask = 0},
-        {.name = "+ material: Ka="  , .rangefp = &light_uniform.Ka, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {.name = "  Kd="}, {.name = "  Ks="},
-        {.name = "  shininess="     , .rangefp = &light_uniform.shininess, .minf = 0.f, .maxf = 100.f, .stepf = 1.0f},
-        {.name = "+ light: ambient=", .rangefp = light_uniform.ambient_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
-        {.name = "  diffuse="       , .rangefp = light_uniform.diffuse_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
-        {.name = "  specular="      , .rangefp = light_uniform.specular_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
-        {.name = "  position="      , .rangefp = light_uniform.light_position, .minf = -10.f, .maxf = 10.f, .stepf = 0.1f}, {}, {},
+        {.name = "+ lighting", .flagsip = &uniform_block.mode, .flag = MODE_LIGHTING, .mask = 0},
+        {.name = "+ material: Ka="  , .rangefp = &uniform_block.Ka, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {.name = "  Kd="}, {.name = "  Ks="},
+        {.name = "  shininess="     , .rangefp = &uniform_block.shininess, .minf = 0.f, .maxf = 100.f, .stepf = 1.0f},
+        {.name = "+ light: ambient=", .rangefp = uniform_block.ambient_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
+        {.name = "  diffuse="       , .rangefp = uniform_block.diffuse_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
+        {.name = "  specular="      , .rangefp = uniform_block.specular_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
+        {.name = "  position="      , .rangefp = uniform_block.light_position, .minf = -10.f, .maxf = 10.f, .stepf = 0.1f}, {}, {},
     };
     static int cx = 0, cy = 0; // カーソル位置
     static std::vector<int> cx_max; // xカーソル最大値
@@ -637,28 +634,28 @@ static void calc_params(float time, float ratio) {
     // ビュー変換
     mat4x4_look_at(view_matrix, camera_eye, camera_center, camera_up);
     // プロジェクション変換
-    if (MODE_PROJECTION_ORTHO & vertex_uniform.mode) {
+    if (MODE_PROJECTION_ORTHO & uniform_block.mode) {
         mat4x4_ortho(projection_matrix, ortho.left, ortho.right, ortho.bottom, ortho.top, ortho.near, ortho.far);
     }
-    else if (MODE_PROJECTION_PERSPECTIVE & vertex_uniform.mode) {
+    else if (MODE_PROJECTION_PERSPECTIVE & uniform_block.mode) {
         mat4x4_perspective(projection_matrix, perspective.y_fov, perspective.aspect, perspective.near, perspective.far);
     }
     // MVP
-    mat4x4_mul(vertex_uniform.modelview_matrix, view_matrix, model_matrix);
-    mat4x4_mul(vertex_uniform.modelview_projection_matrix, projection_matrix, vertex_uniform.modelview_matrix);
+    mat4x4_mul(uniform_block.modelview_matrix, view_matrix, model_matrix);
+    mat4x4_mul(uniform_block.modelview_projection_matrix, projection_matrix, uniform_block.modelview_matrix);
     // mat4 modelview_normal_matrix; // transpose(inverse(modelview_matrix))
-    mat4x4_invert(modelview_invert_matrix, vertex_uniform.modelview_matrix);
-    mat4x4_transpose(vertex_uniform.modelview_normal_matrix, modelview_invert_matrix);
+    mat4x4_invert(modelview_invert_matrix, uniform_block.modelview_matrix);
+    mat4x4_transpose(uniform_block.modelview_normal_matrix, modelview_invert_matrix);
 }
 
 // メイン
 
-int sample09(void) {
-    std::cout << "start sample05" << std::endl;
+int main(void) {
+    std::cout << "start sample09" << std::endl;
     atexit(atexit_function);
 
     // GLFW 初期化
-    glfwSetErrorCallback(glfw_error_callback);
+    glfwSetErrorCallback(glfw_error_callback); // エラー発生時のコールバック指定
     if (GL_FALSE == glfwInit()) {
         std::cerr << "!glfwInit()" << std::endl;
         return 1;
@@ -669,33 +666,34 @@ int sample09(void) {
 #else
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 #endif
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE);
-    GLFWwindow* const window = glfwCreateWindow(1280, 720, "sample", NULL, NULL);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE); // MacOS で必須
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // Core Profile
+    glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, GL_TRUE); // デバッグモード
+    GLFWwindow* const window = glfwCreateWindow(1280, 720, "sample", NULL, NULL); // ウィンドウ作成
     if (nullptr == window) {
         std::cerr << "!glfwCreateWindow()" << std::endl;
         glfwTerminate();
-        return 1;
+        exit(1);
     }
-    glfwSetKeyCallback(window, glfw_key_callback);
-    glfwMakeContextCurrent(window);
+    glfwSetKeyCallback(window, glfw_key_callback); // キーコールバック指定
+    glfwMakeContextCurrent(window); // 描画対象
     glfwSwapInterval(1); // バッファ切り替え間隔
 
     // OpenGL 初期化
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
         std::cerr << "!gladLoadGLLoader()" << std::endl;
         glfwTerminate();
-        return 1;
+        exit(1);
     }
+    // デバッグ出力有効
     if (NULL != glDebugMessageCallback) {
         glEnable(GL_DEBUG_OUTPUT);
         glDebugMessageCallback(gl_debug_message_callback, 0);
     }
-    glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+    glClearColor(0.0f, 0.0f, 0.0f, 0.0f); // カラーバッファーをクリアする色
     glEnable(GL_DEPTH_TEST); // デプステストを有効にする
     glDepthFunc(GL_LESS); // 前のものよりもカメラに近ければ、フラグメントを受け入れる
-    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION);
+    glProvokingVertex(GL_FIRST_VERTEX_CONVENTION); // フラットシェーディング
 
     // モデル作成。
     create_sphere_model(sphere_model);
@@ -708,8 +706,7 @@ int sample09(void) {
     glLinkProgram(program);
     glUseProgram(program);
     // UBO 作成。
-    GLuint vertex_uniform_buffer = create_uniform_buffer(sizeof(vertex_uniform), program, "vertex_uniform", vertex_uniform_binding);
-    GLuint light_uniform_buffer = create_uniform_buffer(sizeof(vertex_uniform), program, "light_uniform", light_uniform_binding);
+    GLuint uniform_block_buffer = create_uniform_buffer(sizeof(uniform_block), program, "uniform_block", uniform_block_binding);
     // テキスト描画初期化。
     init_render_text();
     // エラー判定
@@ -735,13 +732,9 @@ int sample09(void) {
         calc_params((float)time, ratio);
         // シェーダー設定
         glUseProgram(program);
-        glBindBuffer(GL_UNIFORM_BUFFER, vertex_uniform_buffer);
-        GLvoid* buf = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(vertex_uniform), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-        memcpy(buf, &vertex_uniform, sizeof(vertex_uniform));
-        glUnmapBuffer(GL_UNIFORM_BUFFER);
-        glBindBuffer(GL_UNIFORM_BUFFER, light_uniform_buffer);
-        buf = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(light_uniform), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
-        memcpy(buf, &light_uniform, sizeof(light_uniform));
+        glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding,uniform_block_buffer);
+        GLvoid* buf = glMapBufferRange(GL_UNIFORM_BUFFER, 0, sizeof(uniform_block), GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+        memcpy(buf, &uniform_block, sizeof(uniform_block));
         glUnmapBuffer(GL_UNIFORM_BUFFER);
         // テクスチャー設定
         glActiveTexture(GL_TEXTURE0);
@@ -752,7 +745,6 @@ int sample09(void) {
         if (nullptr != sphere_model.fragments1) {
             if (frame_count >= 100) {
                 glBindBuffer(GL_ARRAY_BUFFER, sphere_model.vertex_buffer);
-                //glBufferSubData(GL_ARRAY_BUFFER, 0, size, data);
                 float* buf = (float*)glMapBufferRange(GL_ARRAY_BUFFER, 0, sphere_model.verts_count * sphere_model.verts_stride, GL_MAP_WRITE_BIT);
                 translate_vertex(sphere_model, buf);
                 glUnmapBuffer(GL_ARRAY_BUFFER);
@@ -761,17 +753,17 @@ int sample09(void) {
         }
         // 描画
         glBindVertexArray(sphere_model.vertex_array);
-        if (sphere_model.fragment1_count >= 1) {
-            glDrawArrays(GL_TRIANGLES, 0, (GLsizei)sphere_model.fragment1_count);
-        }
-        if (sphere_model.fragment2_count >= 1) {
-            glDrawArrays(GL_LINES, (GLint)(sphere_model.fragments_count - sphere_model.fragment2_count), (GLsizei)sphere_model.fragment2_count);
-        }
-        if (!(sphere_model.fragment1_count >= 1 || sphere_model.fragment2_count >= 1)) {
+        if (frame_count >= 100) {
+            if (sphere_model.fragment1_count >= 1) {
+                glDrawArrays(GL_TRIANGLES, 0, (GLsizei)sphere_model.fragment1_count);
+            }
+            if (sphere_model.fragment2_count >= 1) {
+                glDrawArrays(GL_LINES, (GLint)(sphere_model.fragments_count - sphere_model.fragment2_count), (GLsizei)sphere_model.fragment2_count);
+            }
+        } else {
             if (0 == sphere_model.element_buffer) {
                 glDrawArrays(GL_TRIANGLES, 0, (GLsizei)sphere_model.verts_count);
-            }
-            else {
+            } else {
                 glDrawElements(GL_TRIANGLES, (GLsizei)sphere_model.polys_count, GL_UNSIGNED_INT, NULL);
             }
         }
@@ -810,4 +802,3 @@ int sample09(void) {
     std::cout << std::endl;
     return 0;
 }
-#endif
