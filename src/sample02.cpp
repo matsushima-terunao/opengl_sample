@@ -346,7 +346,7 @@ int main02(void) {
     }
     glfwSetKeyCallback(window, glfw_key_callback); // キーコールバック指定
     glfwMakeContextCurrent(window); // 描画対象
-    glfwSwapInterval(1); // バッファ切り替え間隔
+    glfwSwapInterval(1); // バッファー切り替え間隔
 
     // OpenGL 初期化
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {

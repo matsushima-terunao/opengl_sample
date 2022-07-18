@@ -536,9 +536,12 @@ static void create_sphere_model(Model& model) {
 
 // 入力
 
-static std::unordered_map<int, bool> key_map;
-static std::vector<std::pair<std::string, float*>> render_text_listv;
+static std::unordered_map<int, bool> key_map; // キー押下状態
+static std::vector<std::pair<std::string, float*>> render_text_listv; // パラメーター表示用
 
+/**
+ * キー押下判定。
+ */
 static bool is_key(int key, bool is_once) {
     bool result = ((key_map.find(key) != key_map.end()) && key_map[key]);
     key_map[key] = (!is_once && result);
@@ -592,7 +595,7 @@ static void change_params() {
         {.name = "  far="               , .rangefp = &perspective.far  , .minf = 0.f, .maxf = 100.f, .stepf = 1.0f},
         {.name = "+ lighting", .flagsip = &uniform_block.mode, .flag = MODE_LIGHTING, .mask = 0},
         {.name = "+ material: Ka="  , .rangefp = &uniform_block.Ka, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {.name = "  Kd="}, {.name = "  Ks="},
-        {.name = "  shininess="     , .rangefp = &uniform_block.shininess, .minf = 0.f, .maxf = 100.f, .stepf = 1.0f},
+        {.name = "  shininess="     , .rangefp = &uniform_block.shininess, .minf = 0.f, .maxf = 128.f, .stepf = 1.0f},
         {.name = "+ light: ambient=", .rangefp = uniform_block.ambient_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
         {.name = "  diffuse="       , .rangefp = uniform_block.diffuse_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
         {.name = "  specular="      , .rangefp = uniform_block.specular_color, .minf = 0.f, .maxf = 1.0f, .stepf = 0.1f}, {}, {},
@@ -729,6 +732,30 @@ static void calc_params(float time, float ratio) {
     mat4x4_transpose(uniform_block.modelview_normal_matrix, modelview_invert_matrix);
 }
 
+/** フレーム情報 */
+static int frame_count = 0;
+static double start_time = glfwGetTime(); // 開始時刻
+static double elapsed_time = start_time; // 経過時刻
+static double wait_time = 0.0; // 待機時間
+static double total_wait_time = 0.0; // 待機時間合計
+static double fps = 0.0; // FPS
+static double processing_percent = 0.0; // 処理中割合
+
+/**
+ * フレーム情報更新。
+ */
+template<class T> static void update_frame_info(T& ss1, T& ss2) {
+    ++frame_count;
+    double cur_time = glfwGetTime();
+    fps = 0.9 * fps + 0.1 * 1.0 / (cur_time - elapsed_time);
+    processing_percent = 0.9 * processing_percent + 0.1 * 100.0 * (1.0 - wait_time / (cur_time - elapsed_time));
+    double avg_fps = frame_count / (cur_time - start_time);
+    double avg_processing_percent = 100.0 * (1.0 - total_wait_time / (cur_time - start_time));
+    elapsed_time = cur_time;
+    ss1 << "FPS " << std::setw(4) << (int)fps << " " << std::setw(3) << (int)processing_percent << " %";
+    ss2 << "AVG " << std::setw(4) << (int)avg_fps << " " << std::setw(3) << (int)avg_processing_percent << " %";
+}
+
 // メイン
 
 int main08(void) {
@@ -758,7 +785,7 @@ int main08(void) {
     }
     glfwSetKeyCallback(window, glfw_key_callback); // キーコールバック指定
     glfwMakeContextCurrent(window); // 描画対象
-    glfwSwapInterval(1); // バッファ切り替え間隔
+    glfwSwapInterval(1); // バッファー切り替え間隔
 
     // OpenGL 初期化
     if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
@@ -798,9 +825,6 @@ int main08(void) {
     }
 
     // メインループ
-    int frame_count = 0;
-    double start_time = glfwGetTime(), prev_time = start_time, time = 0.0;
-    clock_t start_time2 = clock(), prev_time2 = start_time2, time2 = 0;
     while (GL_FALSE == glfwWindowShouldClose(window)) {
         int width, height;
         glfwGetFramebufferSize(window, &width, &height);
@@ -810,7 +834,7 @@ int main08(void) {
         change_params();
         // パラメーター計算。
         float ratio = (float)width / height;
-        calc_params((float)time, ratio);
+        calc_params((float)elapsed_time, ratio);
         // シェーダー設定
         glUseProgram(program);
         glBindBufferBase(GL_UNIFORM_BUFFER, uniform_block_binding, uniform_block_buffer);
@@ -826,42 +850,22 @@ int main08(void) {
         glBindVertexArray(sphere_model.vertex_array);
         if (0 == sphere_model.element_buffer) {
             glDrawArrays(GL_TRIANGLES, 0, (GLsizei)sphere_model.verts_count);
-        }
-        else {
+        } else {
             glDrawElements(GL_TRIANGLES, (GLsizei)sphere_model.polys_count, GL_UNSIGNED_INT, NULL);
-        }
-        
+        }        
         // パラメーター表示
-        float y = 580.0f;
-        if (frame_count >= 1) {
-            std::stringstream st1, st2;
-            st1 << "ALL  " << std::fixed << std::setprecision(2) << (frame_count / (time - start_time)) << "fps " << (1000.0 * (time - start_time) / frame_count) << "ms "
-                << "CPU " << (frame_count * CLOCKS_PER_SEC / (time2 - start_time2)) << "fps " << (1000.0 * ((double)time2 - start_time2) / CLOCKS_PER_SEC / frame_count) << "ms "
-                << "TOTAL " << time << "s " << frame_count << "f";
-            render_text(st1.str().c_str(), 0.0f, y, 0.2f, vec3{ 1.0f, 1.0f, 1.0f }, true);
-            y -= 15.0f;
-            st2 << "CUR " << std::fixed << std::setprecision(2) << (1 / (time - prev_time)) << "fps " << (1000.0 * (time - prev_time) / 1) << "ms "
-                << "CPU " << (1 * CLOCKS_PER_SEC / (time2 - prev_time2)) << "fps " << (1000.0 * ((double)time2 - prev_time2) / CLOCKS_PER_SEC / 1) << "ms "
-                ;
-            render_text(st2.str().c_str(), 0.0f, y, 0.2f, vec3{ 1.0f, 1.0f, 1.0f }, true);
-            y -= 5.0f;
-        }
-        render_text_list(render_text_listv, 0.0f, y, 0.18f, true);
-        
+        std::stringstream ss1, ss2;
+        update_frame_info(ss1, ss2);
+        render_text(ss1.str().c_str(), 0.0f, 580.0f, 0.2f, vec3{ 1.0f, 1.0f, 1.0f }, false);
+        render_text(ss2.str().c_str(), 0.0f, 565.0f, 0.2f, vec3{ 1.0f, 1.0f, 1.0f }, false);
+        render_text_list(render_text_listv, 0.0f, 560.0f, 0.18f, true);
         // 描画反映
+        double cur_time = glfwGetTime();
         glfwSwapBuffers(window);
+        wait_time = glfwGetTime() - cur_time;
+        total_wait_time += wait_time;
         glfwPollEvents();
-        // 計測用
-        ++frame_count;
-        prev_time = time;
-        prev_time2 = time2;
-        time = glfwGetTime();
-        time2 = clock();
     }
-    time = glfwGetTime() - start_time;
-    std::cout << "ALL " << std::fixed << std::setprecision(2) << (frame_count / (time - start_time)) << "fps " << (1000.0 * (time - start_time) / frame_count) << "ms "
-        << "CPU " << (frame_count * CLOCKS_PER_SEC / (time2 - start_time2)) << "fps " << (1000.0 * (time2 - start_time2) / CLOCKS_PER_SEC / frame_count) << "ms "
-        << "TOTAL " << time << "s " << frame_count << "f";
-    std::cout << std::endl;
+    update_frame_info(std::cout, std::cout);
     return 0;
 }

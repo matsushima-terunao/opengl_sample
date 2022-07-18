@@ -18,6 +18,7 @@ struct Model {
     float a, b, c;
     float va, vb, vc;
     int cnt;
+    bool fragmented = false;
 
     struct Fragment {
         float x, y, z;
