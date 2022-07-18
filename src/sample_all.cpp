@@ -1,10 +1,9 @@
-﻿//
-//  sample_all.cpp
-//  opengl_sample
-//
-//  Created by matsushima on 2021/07/21.
-//  Copyright © 2021 matsushima. All rights reserved.
-//
+﻿/*
+ * OpenGLサンプル
+ *
+ * @author matsushima
+ * @since 2021/07/21
+ */
 
 #include "fractal_texture.hpp"
 #include "image.hpp"

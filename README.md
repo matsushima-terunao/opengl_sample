@@ -1730,3 +1730,136 @@ static void translate_vertex(Model::Fragment* fragment, float* dst_vertex, float
 ![image-9-1](img/image-9-1.png)
 ![image-9-2](img/image-9-2.png)
 ![image-9-3](img/image-9-3.png)
+
+----
+
+# OpenGLサンプル9 - 破片データ作成
+
+![image-47](img/image-47.png)
+
+今までのサンプルを統合したバージョンです。
+
+## FPS
+
+FPS: 直近の FPS、処理中割合  
+AVG: 起動してからの平均 FPS、処理中割合  
+
+## 設定
+
+上下左右でカーソル(緑)移動  
+数値変更: エンターで赤色に変更後、上下左右で値変更、再度エンターで決定  
+
+![image-48](img/image-48.png)
+
+選択変更: 選択したい箇所でエンター
+
+![image-49](img/image-49.png)
+
+ON/OFF 切り替え: 切り替えたい箇所でエンター
+
+![image-50](img/image-50.png)
+
+## 設定内容
+
+### model: 表示するモデル
+
+![image-52](img/image-52.png)
+![image-53](img/image-53.png)
+![image-54](img/image-54.png)
+![image-55](img/image-55.png)
+![image-56](img/image-56.png)
+
+### interval: 画面更新間隔
+
+0: ウェイトなし  
+1: 1フレーム間隔更新  
+2: ...  
+
+### color: ポリゴンの色
+
+none: なし(白)
+
+![image-57](img/image-57.png)
+
+vertex: 頂点色
+
+![image-58](img/image-58.png)
+
+texture: テクスチャー
+
+![image-59](img/image-59.png)
+
+### shading: シェーディング
+
+flat: フラットシェーディング
+
+![image-60](img/image-60.png)
+
+gouroud: グーローシェーディング
+
+![image-61](img/image-61.png)
+
+phong: フォンシェーディング
+
+![image-62](img/image-62.png)
+
+### model: モデルの座標
+
+position: 位置(x y z)  
+angle: 角度(x軸 y軸 z軸)  
+dangle: 回転角度(x軸 y軸 z軸)  
+
+### camera: カメラの座標
+
+eye: カメラの位置(x y z)   
+center: カメラの向き(x y z)   
+up: カメラの上方向の向き(x y z)   
+
+### projection: 投影
+
+ortho: 平行投影
+
+![image-63](img/image-63.png)
+
+perspective: 透視投影
+
+![image-64](img/image-64.png)
+
+### ortho: 平行投影
+
+left right bottom top: 投影面の範囲  
+near far: z方向のクリッピング範囲  
+
+### perspective: 透視投影
+
+y_fov: 投影面へのy軸方向の視野角  
+aspect: 投影面のx-yアスペクト比  
+near far: z方向のクリッピング範囲  
+
+### lighting: ライティング
+
+on
+
+![image-65](img/image-65.png)
+
+off
+
+![image-66](img/image-66.png)
+
+### material: 物質光
+
+Ka: 環境反射  
+Kd: 拡散反射  
+Ks: 鏡面反射  
+shininess: 鏡面反射指数(0-128)  
+
+![image-67](img/image-67.png)
+
+### light: ライト
+
+ambient: 環境光  
+diffuse: 拡散光  
+specular: 鏡面反射光  
+position: 光源座標  
+
+![image-68](img/image-68.png)
