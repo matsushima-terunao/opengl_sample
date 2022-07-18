@@ -1735,7 +1735,7 @@ static void translate_vertex(Model::Fragment* fragment, float* dst_vertex, float
 
 ----
 
-# OpenGLサンプル9 - 破片データ作成
+# OpenGLサンプル
 
 ![image-47](img/image-47.png)
 
